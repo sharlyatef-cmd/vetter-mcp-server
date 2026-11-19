@@ -3,7 +3,11 @@ import os, time, requests
 
 mcp = FastMCP("vetter-bridge")
 
-DOMAIN = os.environ API_KEY = os.environ CLIENT_ID = os.environ CLIENT_SECRET = os.environ SCOPE = os.environ.get("VETTER_SCOPE", "APIService")
+DOMAIN = os.environ["VETTER_DOMAIN"]
+API_KEY = os.environ["VETTER_API_KEY"]
+CLIENT_ID = os.environ["VETTER_CLIENT_ID"]
+CLIENT_SECRET = os.environ["VETTER_CLIENT_SECRET"]
+SCOPE = os.environ.get("VETTER_SCOPE", "APIService")
 
 _token = None
 _token_exp = 0
@@ -20,7 +24,8 @@ def get_token():
     }, timeout=30)
     r.raise_for_status()
     data = r.json()
-    _token = data _token_exp = time.time() + int(data.get("expires_in", 3600))
+    _token = data["access_token"]
+    _token_exp = time.time() + int(data.get("expires_in", 3600))
     return _token
 
 def headers():
@@ -53,7 +58,7 @@ def check_open_slots(date: str, provider_id: str = "") -> str:
     """Check open appointment slots for a date (YYYY-MM-DD). Optionally filter by provider id."""
     params = {"date": date, "page": "1", "perPage": "50"}
     if provider_id:
-        params = provider_id
+        params["providerId"] = provider_id
     r = requests.get(f"{DOMAIN}/api/1.0.0/{API_KEY}/appointments/open-slots",
                      headers=headers(), params=params, timeout=30)
     if r.status_code == 404:
