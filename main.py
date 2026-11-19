@@ -16,8 +16,7 @@ def get_token():
     if _token and time.time() < _token_exp - 60:
         return _token
     r = requests.post(
-        DOMAIN + "/api/oauth/access_token",
-        data={
+DOMAIN + "/oauth/access_token",        data={
             "grant_type": "client_credentials",
             "client_id": CLIENT_ID,
             "client_secret": CLIENT_SECRET,
