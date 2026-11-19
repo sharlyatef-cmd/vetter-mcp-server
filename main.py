@@ -5,11 +5,11 @@ from zoneinfo import ZoneInfo
 
 mcp = FastMCP("vetter-bridge", host="0.0.0.0", port=int(os.environ.get("PORT", "8000")))
 
-DOMAIN = os.environ.get("VETTER_DOMAIN")
-API_KEY = os.environ.get("VETTER_API_KEY")
-CLIENT_ID = os.environ.get("VETTER_CLIENT_ID")
-CLIENT_SECRET = os.environ.get("VETTER_CLIENT_SECRET")
-SCOPE = os.environ.get("VETTER_SCOPE", "APIService")
+DOMAIN = (os.environ.get("VETTER_DOMAIN") or "").strip().strip('"').strip("'").rstrip("/")
+API_KEY = (os.environ.get("VETTER_API_KEY") or "").strip().strip('"').strip("'")
+CLIENT_ID = (os.environ.get("VETTER_CLIENT_ID") or "").strip().strip('"').strip("'")
+CLIENT_SECRET = (os.environ.get("VETTER_CLIENT_SECRET") or "").strip().strip('"').strip("'")
+SCOPE = (os.environ.get("VETTER_SCOPE") or "APIService").strip()
 TZ = ZoneInfo("America/New_York")
 
 _token = None
@@ -20,28 +20,36 @@ def get_token():
     global _token, _token_exp
     if _token and time.time() < _token_exp - 60:
         return _token
-    r = requests.post(
-        DOMAIN + "/oauth/access_token",
-        headers={"x-api-key": CLIENT_SECRET},
-        data={
-            "grant_type": "client_credentials",
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-            "scope": SCOPE,
-        },
-        timeout=30,
-    )
-    r.raise_for_status()
-    data = r.json()
-    _token = data.get("access_token")
-    _token_exp = time.time() + int(data.get("expires_in", 3600))
-    return _token
+    last = "no response"
+    for key in (CLIENT_SECRET, API_KEY):
+        if not key:
+            continue
+        r = requests.post(
+            DOMAIN + "/oauth/access_token",
+            headers={"x-api-key": key, "Cache-Control": "no-cache"},
+            data={
+                "grant_type": "client_credentials",
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "scope": SCOPE,
+            },
+            timeout=30,
+        )
+        if r.status_code < 400:
+            data = r.json()
+            _token = data.get("access_token")
+            _token_exp = time.time() + int(data.get("expires_in", 3600))
+            if not _token:
+                raise RuntimeError("Vetter login returned no token: " + r.text[:300])
+            return _token
+        last = str(r.status_code) + " " + r.text[:300]
+    raise RuntimeError("Vetter login failed: " + last)
 
 
 def headers():
     return {
         "Authorization": "Bearer " + get_token(),
-        "x-api-key": CLIENT_SECRET,
+        "x-api-key": CLIENT_SECRET or API_KEY,
         "Accept": "application/json",
         "Content-Type": "application/json",
     }
