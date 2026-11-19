@@ -1,8 +1,7 @@
 from mcp.server.fastmcp import FastMCP
 import os, time, requests
 
-mcp = FastMCP("vetter-bridge")
-
+mcp = FastMCP("vetter-bridge", host="0.0.0.0", port=int(os.environ.get("PORT", "8000")))
 DOMAIN = os.environ.get("VETTER_DOMAIN")
 API_KEY = os.environ.get("VETTER_API_KEY")
 CLIENT_ID = os.environ.get("VETTER_CLIENT_ID")
