@@ -88,8 +88,4 @@ def book_appointment(client_id: str, patient_id: str, start: str, end: str,
                       headers=headers(), json=body, timeout=30)
     if r.status_code >= 400:
         return f"Booking failed ({r.status_code}): {r.text[:500]}"
-    d = r.json()
-    return f"Booked! Appointment id: {d.get('id')} | {d.get('start')} with provider {d.get('provider',{}).get('name','?')}"
-
-if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+    d = r
